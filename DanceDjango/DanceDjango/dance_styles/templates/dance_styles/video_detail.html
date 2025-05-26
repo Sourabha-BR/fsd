@@ -1,0 +1,399 @@
+{% extends 'dance_styles/base.html' %}
+{% block content %}
+<div class="container mt-5 pt-5">
+    <div class="row">
+        <!-- Video Player Column -->
+        <div class="col-lg-8">
+            <div class="video-player-wrapper mb-4">
+                {% if video.video_type == 'live' and not is_live %}
+                <div class="live-countdown text-center p-4 bg-light rounded">
+                    <h3>Live Class Starting In</h3>
+                    <div class="countdown" data-scheduled-time="{{ video.scheduled_time|date:'c' }}">
+                        <div class="countdown-item">
+                            <span class="days">00</span>
+                            <span class="label">Days</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="hours">00</span>
+                            <span class="label">Hours</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="minutes">00</span>
+                            <span class="label">Minutes</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="seconds">00</span>
+                            <span class="label">Seconds</span>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="video-container">
+                    <video id="videoPlayer" class="video-js vjs-big-play-centered" controls preload="auto" data-setup='{}'>
+                        <source src="{{ video.video_url }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="video-info mb-5">
+                <h1 class="h2 mb-3">{{ video.title }}</h1>
+                {% if video.is_premium %}
+                <span class="badge bg-warning text-dark mb-3">
+                    <i class="fas fa-crown"></i> Premium Content
+                </span>
+                {% endif %}
+                <div class="d-flex align-items-center text-muted mb-4">
+                    <div class="me-4">
+                        <i class="fas fa-user me-2"></i>
+                        {{ video.instructor.name }}
+                    </div>
+                    <div class="me-4">
+                        <i class="fas fa-music me-2"></i>
+                        {{ video.dance_style.name }}
+                    </div>
+                    {% if video.duration %}
+                    <div>
+                        <i class="fas fa-clock me-2"></i>
+                        {{ video.duration|time:"G:i:s" }}
+                    </div>
+                    {% endif %}
+                </div>
+                <p class="mb-4">{{ video.description }}</p>
+                {% if progress %}
+                <div class="progress mb-2" style="height: 4px;">
+                    <div class="progress-bar" role="progressbar" 
+                        style="width: {% widthratio progress.watched_duration|total_seconds video.duration|total_seconds 100 %}%" 
+                        aria-valuenow="{% widthratio progress.watched_duration|total_seconds video.duration|total_seconds 100 %}" 
+                        aria-valuemin="0" 
+                        aria-valuemax="100">
+                    </div>
+                </div>
+                <p class="text-muted small">
+                    {% if progress.completed %}
+                    <i class="fas fa-check-circle text-success"></i> Completed
+                    {% else %}
+                    {{ progress.watched_duration|time:"G:i:s" }} of {{ video.duration|time:"G:i:s" }} watched
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
+
+            <!-- Comments Section -->
+            <div class="comments-section">
+                <h3 class="h4 mb-4">Comments</h3>
+                <form method="post" class="mb-4">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="text" name="comment" class="form-control" placeholder="Add a comment...">
+                        <input type="hidden" name="timestamp" id="commentTimestamp" value="">
+                        <button type="submit" class="btn btn-primary">Post</button>
+                    </div>
+                </form>
+                
+                <div class="comments-list">
+                    {% for comment in comments %}
+                    <div class="comment-item">
+                        <div class="d-flex align-items-start">
+                            <div class="comment-avatar">
+                                {% if comment.user.profile_picture %}
+                                <img src="{{ comment.user.profile_picture.url }}" alt="{{ comment.user.username }}">
+                                {% else %}
+                                <div class="avatar-placeholder">
+                                    {{ comment.user.username|make_list|first|upper }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="comment-content">
+                                <div class="comment-header">
+                                    <span class="comment-author">{{ comment.user.username }}</span>
+                                    {% if comment.timestamp %}
+                                    <span class="comment-timestamp" data-timestamp="{{ comment.timestamp|total_seconds }}">
+                                        at {{ comment.timestamp|time:"G:i:s" }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <p class="comment-text mb-0">{{ comment.content }}</p>
+                                <span class="comment-date text-muted">
+                                    {{ comment.created_at|timesince }} ago
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">No comments yet. Be the first to comment!</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="h5 mb-4">Next Up</h3>
+                    {% for next_video in next_videos %}
+                    <a href="{% url 'dance_styles:video_detail' next_video.id %}" class="next-video-item">
+                        <div class="d-flex mb-3">
+                            <div class="next-video-thumbnail">
+                                {% if next_video.thumbnail %}
+                                <img src="{{ next_video.thumbnail.url }}" alt="{{ next_video.title }}">
+                                {% else %}
+                                <img src="https://images.unsplash.com/photo-1547153760-18fc86324498?w=800&q=80" alt="{{ next_video.title }}">
+                                {% endif %}
+                                {% if next_video.duration %}
+                                <span class="duration">{{ next_video.duration|time:"G:i:s" }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="next-video-info">
+                                <h4 class="h6 mb-1">{{ next_video.title }}</h4>
+                                <p class="text-muted small mb-0">{{ next_video.instructor.name }}</p>
+                            </div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <p class="text-muted">No more videos available.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .video-player-wrapper {
+        position: relative;
+        border-radius: 15px;
+        overflow: hidden;
+        background: #000;
+    }
+
+    .video-container {
+        position: relative;
+        padding-top: 56.25%;
+    }
+
+    .video-js {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .live-countdown {
+        padding: 3rem !important;
+    }
+
+    .countdown {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    .countdown-item {
+        text-align: center;
+    }
+
+    .countdown-item span {
+        display: block;
+    }
+
+    .countdown-item .days,
+    .countdown-item .hours,
+    .countdown-item .minutes,
+    .countdown-item .seconds {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+
+    .countdown-item .label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 0.5rem;
+    }
+
+    .comments-section {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .comment-item {
+        padding: 1rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .comment-avatar {
+        margin-right: 1rem;
+    }
+
+    .comment-avatar img,
+    .avatar-placeholder {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .avatar-placeholder {
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+
+    .comment-content {
+        flex: 1;
+    }
+
+    .comment-header {
+        margin-bottom: 0.5rem;
+    }
+
+    .comment-author {
+        font-weight: 500;
+        margin-right: 0.5rem;
+    }
+
+    .comment-timestamp {
+        color: #666;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+
+    .comment-date {
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+        display: inline-block;
+    }
+
+    .next-video-item {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        transition: transform 0.2s ease;
+    }
+
+    .next-video-item:hover {
+        transform: translateX(5px);
+    }
+
+    .next-video-thumbnail {
+        position: relative;
+        width: 120px;
+        height: 68px;
+        margin-right: 1rem;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .next-video-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .next-video-thumbnail .duration {
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 2px 4px;
+        border-radius: 2px;
+        font-size: 0.75rem;
+    }
+
+    .next-video-info {
+        flex: 1;
+    }
+
+    @media (max-width: 768px) {
+        .countdown {
+            gap: 1rem;
+        }
+
+        .countdown-item .days,
+        .countdown-item .hours,
+        .countdown-item .minutes,
+        .countdown-item .seconds {
+            font-size: 2rem;
+        }
+    }
+</style>
+
+{% block extra_js %}
+<link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet">
+<script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize video player
+        if (document.getElementById('videoPlayer')) {
+            const player = videojs('videoPlayer');
+            
+            // Track video progress
+            player.on('timeupdate', function() {
+                const watchedDuration = player.currentTime();
+                
+                // Update progress every 5 seconds
+                if (Math.floor(watchedDuration) % 5 === 0) {
+                    fetch(`{% url 'dance_styles:update_video_progress' video.id %}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: `watched_duration=${watchedDuration}`
+                    });
+                }
+            });
+
+            // Update comment timestamp
+            player.on('timeupdate', function() {
+                document.getElementById('commentTimestamp').value = player.currentTime();
+            });
+
+            // Make timestamp comments clickable
+            document.querySelectorAll('.comment-timestamp').forEach(timestamp => {
+                timestamp.addEventListener('click', function() {
+                    const time = parseFloat(this.dataset.timestamp);
+                    player.currentTime(time);
+                });
+            });
+        }
+
+        // Initialize countdown for live classes
+        const countdownEl = document.querySelector('.countdown');
+        if (countdownEl) {
+            const scheduledTime = new Date(countdownEl.dataset.scheduledTime).getTime();
+            
+            const countdown = setInterval(function() {
+                const now = new Date().getTime();
+                const distance = scheduledTime - now;
+                
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                
+                countdownEl.querySelector('.days').textContent = String(days).padStart(2, '0');
+                countdownEl.querySelector('.hours').textContent = String(hours).padStart(2, '0');
+                countdownEl.querySelector('.minutes').textContent = String(minutes).padStart(2, '0');
+                countdownEl.querySelector('.seconds').textContent = String(seconds).padStart(2, '0');
+                
+                if (distance < 0) {
+                    clearInterval(countdown);
+                    location.reload();
+                }
+            }, 1000);
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

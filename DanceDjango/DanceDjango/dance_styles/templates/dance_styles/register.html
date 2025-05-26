@@ -1,0 +1,126 @@
+{% extends 'dance_styles/base.html' %}
+
+{% block title %}Register for Dance Class{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="register-hero position-relative overflow-hidden p-3 p-md-5 text-center">
+    <div class="col-md-8 p-lg-5 mx-auto my-5">
+        <h1 class="display-4 fw-bold text-white">Register for Dance Class</h1>
+        <p class="lead fw-normal text-white mb-4">Choose your preferred dance style and schedule</p>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-5">
+                    {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <form method="post" id="registrationForm" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label for="name" class="form-label fw-bold">Your Name</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ user.get_full_name }}" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="dance_style" class="form-label fw-bold">Select Dance Style</label>
+                            <select class="form-select" id="dance_style" name="dance_style" required>
+                                <option value="">Choose a dance style...</option>
+                                {% for style in dance_styles %}
+                                <option value="{{ style.id }}">{{ style.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div id="styleDetails" class="mb-4 d-none">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3" id="choreographerName"></h5>
+                                    <p class="card-text mb-2">
+                                        <strong>Registration Fee:</strong>
+                                        <span id="registrationFee"></span>
+                                    </p>
+                                    <div class="mt-3">
+                                        <label class="form-label fw-bold">Available Time Slots</label>
+                                        <div id="timeSlots" class="list-group">
+                                            <!-- Time slots will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fw-bold">
+                                Proceed to Payment
+                                <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.register-hero {
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad') no-repeat center center;
+    background-size: cover;
+    color: white;
+    margin-bottom: 40px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const danceStyleSelect = document.getElementById('dance_style');
+    const styleDetails = document.getElementById('styleDetails');
+    const choreographerName = document.getElementById('choreographerName');
+    const registrationFee = document.getElementById('registrationFee');
+    const timeSlotsContainer = document.getElementById('timeSlots');
+
+    danceStyleSelect.addEventListener('change', function() {
+        if (this.value) {
+            fetch(`/api/dance-style/${this.value}/`)
+                .then(response => response.json())
+                .then(data => {
+                    choreographerName.textContent = `Choreographer: ${data.choreographer}`;
+                    registrationFee.textContent = `₹${data.registration_fee}`;
+                    
+                    // Populate time slots
+                    timeSlotsContainer.innerHTML = '';
+                    data.class_slots.forEach(slot => {
+                        const radioDiv = document.createElement('div');
+                        radioDiv.className = 'list-group-item';
+                        radioDiv.innerHTML = `
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="class_slot" 
+                                       id="slot_${slot.id}" value="${slot.id}" required>
+                                <label class="form-check-label" for="slot_${slot.id}">
+                                    ${slot.day} - ${slot.start_time} to ${slot.end_time}
+                                </label>
+                            </div>
+                        `;
+                        timeSlotsContainer.appendChild(radioDiv);
+                    });
+                    
+                    styleDetails.classList.remove('d-none');
+                });
+        } else {
+            styleDetails.classList.add('d-none');
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends 'dance_styles/base.html' %}
+
+{% block title %}{{ dance_style.name }} - Dance Studio{% endblock %}
+
+{% block content %}
+<div class="row mb-5">
+    <div class="col-md-5">
+        {% if dance_style.image %}
+        <img src="{{ dance_style.image.url }}" class="img-fluid rounded" alt="{{ dance_style.name }}">
+        {% else %}
+        <div class="bg-light text-center p-5 rounded">
+            <span class="text-muted">No image available</span>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-md-7">
+        <h1 class="mb-3">{{ dance_style.name }}</h1>
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Dance Style Details</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Choreographer:</strong> {{ dance_style.choreographer }}</li>
+                    <li class="list-group-item"><strong>Registration Fee:</strong> ₹{{ dance_style.registration_fee }}</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Class Schedule</h5>
+                {% if dance_style.class_slots.all %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slot in dance_style.class_slots.all %}
+                        <tr>
+                            <td>{{ slot.day }}</td>
+                            <td>{{ slot.start_time|time:"g:i A" }} - {{ slot.end_time|time:"g:i A" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted">No class slots available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">About {{ dance_style.name }}</h5>
+                <p class="card-text">{{ dance_style.description|linebreaks }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'dance_styles:home' %}" class="btn btn-secondary">Back to Home</a>
+</div>
+{% endblock %}
